@@ -1,14 +1,32 @@
-# Fetching latest version of Java
-FROM openjdk:17
- 
-# Setting up work directory
+# Use an official Maven image as the build environment
+FROM maven:3.8.4-openjdk-11-slim AS build
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy the jar file into our app
-COPY ./target/system-0.0.1-SNAPSHOT.jar /app
+# Copy the project's POM file
+COPY pom.xml .
 
-# Exposing port 8080
+# Download the project dependencies
+RUN mvn dependency:go-offline
+
+# Copy the project source code
+COPY src ./src
+
+# Build the application
+RUN mvn package -DskipTests
+
+# Create a new stage for the runtime environment
+FROM openjdk:11-jre-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the built JAR file from the previous stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the application's port
 EXPOSE 8080
 
-# Starting the application
-CMD ["java", "-jar", "system-0.0.1-SNAPSHOT.jar"]
+# Specify the command to run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
