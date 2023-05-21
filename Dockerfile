@@ -1,32 +1,14 @@
-# Use an official Maven image as the build environment
-FROM maven:3.8.4-openjdk-11-slim AS build
+# Use a base image with Java installed
+FROM openjdk:17-jdk-alpine
 
-# Set the working directory in the container
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the project's POM file
-COPY pom.xml .
+# Copy the packaged JAR file into the container
+COPY target/system-0.0.1-SNAPSHOT.jar app.jar
 
-# Download the project dependencies
-RUN mvn dependency:go-offline
-
-# Copy the project source code
-COPY src ./src
-
-# Build the application
-RUN mvn package -DskipTests
-
-# Create a new stage for the runtime environment
-FROM openjdk:11-jre-slim
-
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the built JAR file from the previous stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Expose the application's port
+# Expose the port that the application listens on
 EXPOSE 8080
 
-# Specify the command to run the application
+# Set the command to run the application when the container starts
 ENTRYPOINT ["java", "-jar", "app.jar"]
